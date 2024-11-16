@@ -4,6 +4,8 @@ venv
 .idea
 idea
 torage
+storage
+logs
 __pycache__/
 
 # dependencies
