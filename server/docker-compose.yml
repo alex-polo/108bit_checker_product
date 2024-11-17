@@ -1,0 +1,16 @@
+services:
+  store-xml-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    container_name: store-xml-server
+    volumes:
+       - ./storage:storage:r
+       - ./logs:logs:rw
+       - /etc/letsencrypt:/etc/letsencrypt:ro
+    ports:
+      - "8080:8080"
+    restart: on-failure
+    command: ["sh", "./run.sh"]
