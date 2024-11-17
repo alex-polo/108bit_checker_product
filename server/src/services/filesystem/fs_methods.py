@@ -1,5 +1,6 @@
 import os.path
 from typing import Optional
+from uuid import UUID
 
 from sqlalchemy import select
 
@@ -33,6 +34,7 @@ async def get_path_document_file_by_uuid(uuid: str) -> Optional[tuple]:
 
         return None
 
+
 async def get_path_image_file(filename: str) -> Optional[str]:
     async for session in get_async_session():
         query = (
@@ -45,4 +47,16 @@ async def get_path_image_file(filename: str) -> Optional[str]:
         return None if file_path is None else os.path.join(file_path, filename)
 
 
+async def get_path_image_file_by_uuid(uuid: UUID) -> Optional[tuple]:
+    async for session in get_async_session():
+        query_filename = (
+            select(Storage.folder, Storage.filename)
+            .join(ProductImage, Storage.product_image_id == ProductImage.id)
+            .where(Storage.uuid == uuid)
+        )
+        result = (await session.execute(query_filename)).one_or_none()
 
+        if result is not None:
+            return result[1], os.path.join(*result)
+
+        return None

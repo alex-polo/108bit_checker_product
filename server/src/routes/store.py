@@ -1,5 +1,5 @@
 import logging
-import os
+import mimetypes
 import uuid
 
 from fastapi import APIRouter, Response, HTTPException
@@ -7,7 +7,7 @@ from starlette.responses import FileResponse
 
 from src.services.filesystem import (
     get_path_document_file,
-    get_path_image_file, get_path_document_file_by_uuid
+    get_path_image_file, get_path_document_file_by_uuid, get_path_image_file_by_uuid
 )
 
 from src.services.yml import (
@@ -15,7 +15,7 @@ from src.services.yml import (
     get_yml_categories,
     def_get_yml_catalog_by_brand
 )
-from src.tools import file_exist_exception
+from src.tools import is_file_exist
 
 logger = logging.getLogger('server')
 
@@ -60,27 +60,54 @@ async def get_yml_catalog_by_brand(brand: str):
     yml_data = await def_get_yml_catalog_by_brand(brand=brand)
     return Response(content=yml_data, media_type="application/xml")
 
+
 ###########################   END CATALOG'S    ############################
 #############################   FILESYSTEM    #############################
 
 @store_router.get("/get-document-by-name")
-async def get_document(filename: str):
+async def get_document_by_name(filename: str):
     file_path = await get_path_document_file(filename=filename)
-    file_exist_exception(file_path=file_path)
+    is_file_exist(file_path=file_path)
 
     return FileResponse(file_path, filename=filename)
 
 
-@store_router.get("/get-document-by-uuid")
-async def get_image(document_uuid: str):
+@store_router.get("/get-document-by-uuid/{document_uuid}",
+                  summary="Получить документ по UUID",
+                  # description=,
+                  responses={
+                      200: {
+                          'media_type': "application/pdf",
+                          "description": "Успешное получение изображения",
+                      },
+                      404: {
+                          "description": "Файл не найден или UUID недействителен",
+                          "content": {
+                              "application/json": {
+                                  "example": {"detail": "File not found"}
+                              }
+                          }
+                      }
+                  },
+                  )
+async def get_document_by_uuid(document_uuid: str):
+    """
+        Возвращает изображение по UUID.
+
+        - **document_uuid**: UUID файла изображения.
+
+        Возможные ответы:
+        - **200**: Возвращает файл изображения.
+        - **404**: Если файл не найден или передан некорректный UUID.
+        """
     try:
         uuid_obj = uuid.UUID(document_uuid, version=4)
         if str(uuid_obj) == document_uuid:
             file_query = await get_path_document_file_by_uuid(uuid=document_uuid)
             if file_query is not None:
                 filename, file_path = file_query
-                file_exist_exception(file_path=file_path)
-                return FileResponse(file_path, filename=filename)
+                is_file_exist(file_path=file_path)
+                return FileResponse(path=file_path, media_type="application/pdf", filename=filename)
             else:
                 raise HTTPException(status_code=404, detail="File not found")
     except ValueError:
@@ -88,40 +115,66 @@ async def get_image(document_uuid: str):
         raise HTTPException(status_code=404, detail='Invalid uuid data')
 
 
-
-
 @store_router.get("/get-image-by-name")
-async def get_image(filename: str):
+async def get_image_by_name(filename: str):
     file_path = await get_path_image_file(filename=filename)
-    file_exist_exception(file_path=file_path)
+    is_file_exist(file_path=file_path)
 
     return FileResponse(file_path, filename=filename)
 
 
-# @store_router.get("/get-image-by-uuid")
-# async def get_image(uuid: str):
-#     file_path = await get_path_image_file(filename=filename)
-#     file_exist_exception(file_path=file_path)
-#
-#     return FileResponse(file_path, filename=filename)
+@store_router.get(
+    path="/get-image-by-uuid",
+    summary='Получить изображение по UUID',
+    responses={
+        200: {
+            "content": {
+                "image/png": {},
+                "image/jpeg": {},
+                "image/gif": {},
+                "image/webp": {},
+                "image/svg+xml": {}
+            },
+            "description": "Успешное получение изображения",
+        },
+        404: {
+            "description": "Файл не найден или UUID недействителен",
+            "content": {
+                "application/json": {
+                    "details": {"detail": "File not found"}
+                }
+            }
+        },
+        422: {
+            "description": "Unprocessable Entity. Ошибка валидации UUID",
+            "content": {
+                "application/json": {
+                    "details": {"detail": "UUID not valid"}
+                }
+            }
+        }
+    }
+)
+async def get_image_by_uuid(image_uuid: uuid.UUID):
+    """
+            Возвращает изображение по UUID.
+
+            - **image_uuid**: UUID файла изображения.
+
+            Возможные ответы:
+            - **200**: Возвращает файл изображения.
+            - **404**: Файл не найден или передан некорректный UUID.
+            - **422**: Unprocessable Entity. Ошибка валидации UUID.
+    """
+    logger.info(f'Start method get_image_by_uuid, image_uuid: {image_uuid}')
+    file_query = await get_path_image_file_by_uuid(uuid=image_uuid)
+    print(file_query)
+    if file_query is not None:
+        filename, file_path = file_query
+        if is_file_exist(file_path=file_path):
+            mime_type, _ = mimetypes.guess_type(file_path)
+            return FileResponse(path=file_path, media_type=mime_type, filename=filename)
+
+    raise HTTPException(status_code=404, detail="File not found")
 
 ###########################   END FILESYSTEM    ###########################
-
-
-# @store_router.get("/get-document/{file_name}")
-# async def get_document(file_name: str):
-#     file_path = await get_path_document_file(filename=file_name)
-#
-#     if file_path is None or not os.path.isfile(file_path):
-#         raise HTTPException(status_code=404, detail="File not found")
-#
-#     return FileResponse(file_path, filename=file_name)
-#
-# @store_router.get("/get-image/{file_name}")
-# async def get_image(file_name: str):
-#     file_path = await get_path_image_file(filename=file_name)
-#
-#     if file_path is None or not os.path.isfile(file_path):
-#         raise HTTPException(status_code=404, detail="File not found")
-#
-#     return FileResponse(file_path, filename=file_name)

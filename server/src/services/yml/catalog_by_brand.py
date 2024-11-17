@@ -62,7 +62,7 @@ async def get_108_bit_products_by_brand(brand: str) -> Sequence[RowMapping]:
             ProductDescription.description.label('description'),
             Manufacturer.name.label('manufacturer'),
             EquipmentLines.name.label('equipment_line')
-               )
+        )
         .select_from(Product)
         .join(Manufacturer, Product.manufacturer_id == Manufacturer.id)
         .join(ProductDescription, Product.id == ProductDescription.product_id)
@@ -84,7 +84,6 @@ async def set_offers(offers_element: etree.SubElement, brand: str):
     count_products = len(products_108bit)
     logger.info(f'Query products: {count_products}')
     for product in products_108bit:
-
         offer_product = etree.SubElement(offers_element, "offer",
                                          id=str(product.get('product_id')), available="true")
 
@@ -92,21 +91,19 @@ async def set_offers(offers_element: etree.SubElement, brand: str):
         etree.SubElement(offer_product, "categoryId").text = str(product.get('category_id'))
         etree.SubElement(offer_product, "currencyId").text = "RUB"
         etree.SubElement(offer_product, "price").text = ('0'
-                                                            if product.get('price') is None
-                                                            else str(product.get('price')))
+                                                         if product.get('price') is None
+                                                         else str(product.get('price')))
         etree.SubElement(offer_product, "quantity").text = ('0'
                                                             if product.get('quantity') is None
                                                             else str(product.get('quantity')))
-        etree.SubElement(offer_product, "name").text =  product.get('title')
-        etree.SubElement(offer_product, "description").text =  product.get('description')
+        etree.SubElement(offer_product, "name").text = product.get('title')
+        etree.SubElement(offer_product, "description").text = product.get('description')
         etree.SubElement(offer_product, "equipmentLine").text = product.get('equipment_line')
-        etree.SubElement(offer_product, "manufacturer").text =  product.get('manufacturer')
+        etree.SubElement(offer_product, "manufacturer").text = product.get('manufacturer')
 
         await set_attrs_product(product_id=product.get('product_id'), element=offer_product)
         await set_images(product_id=product.get('product_id'), element=offer_product)
         await set_documents(product_id=product.get('product_id'), element=offer_product)
-
-
 
 
 async def set_categories(categories_element: Element, brand: str):
@@ -116,7 +113,11 @@ async def set_categories(categories_element: Element, brand: str):
         main_category_element = etree.SubElement(categories_element, "category", id=str(pk_key_category))
         main_category_element.text = title_main_category
         for pk_key_sub_cat, title_sub_cat in await get_child_108bit_categories(main_category_id=pk_key_category):
-            etree.SubElement(categories_element, "category", id=str(pk_key_sub_cat), parentId=str(pk_key_category))
+            sub_category = etree.SubElement(categories_element,
+                                            "category",
+                                            id=str(pk_key_sub_cat),
+                                            parentId=str(pk_key_category))
+            sub_category.text = title_sub_cat
 
 
 async def def_get_yml_catalog_by_brand(brand: str) -> str:
