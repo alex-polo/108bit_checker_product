@@ -20,7 +20,7 @@ async def get_path_document_file(filename: str) -> Optional[str]:
         return None if file_path is None else os.path.join(file_path, filename)
 
 
-async def get_path_document_file_by_uuid(uuid: str) -> Optional[tuple]:
+async def get_path_document_file_by_uuid(uuid: UUID) -> Optional[tuple]:
     async for session in get_async_session():
         query_filename = (
             select(Storage.folder, Storage.filename)

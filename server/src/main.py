@@ -16,7 +16,6 @@ logger = logging.getLogger('server')
 origins = [
     "https://127.0.0.1:8080",
     "https://localhost:8080",
-    # '*',
 ]
 
 def config_logger() -> None:
@@ -44,18 +43,18 @@ def get_version_app() -> str:
         return 'no-version'
 
 app = FastAPI(
-        title='Searching products',
+        title='108bit server',
         version=get_version_app(),
-        lifespan=lifespan
+        lifespan=lifespan,
+        docs_url="/server-docs",
+        redoc_url="/server-redoc",
+        openapi_url="/server-108bit-openapi.json"
     )
 
 
 app.include_router(store_router)
 app.include_router(catalog_router)
 app.include_router(auth_router)
-
-# app.include_router(public_router)
-# app.include_router(private_router)
 
 # app.add_middleware(HTTPSRedirectMiddleware, )
 app.add_middleware(

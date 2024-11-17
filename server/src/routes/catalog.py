@@ -19,6 +19,8 @@ catalog_router = APIRouter(
             "content": {"application/xml": {}},
             "description": "Successful response YML data in XML format",
         }})
-async def products(brand: str, exclude_108bit: bool = True, user: User = Depends(current_active_user)):
+async def products(brand: str, exclude_108bit: bool = True,
+                   # user: User = Depends(current_active_user)
+                   ):
     xml_data = await get_products_for_brand_with_categories(brand_name=brand, exclude_108bit=exclude_108bit)
     return Response(content=xml_data, media_type="application/xml")
