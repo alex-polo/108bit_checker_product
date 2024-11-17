@@ -10,7 +10,7 @@ logger = logging.getLogger('server')
 
 catalog_router = APIRouter(
     prefix='/catalog',
-    tags=["Catalog"],
+    tags=["catalog"],
 )
 
 
